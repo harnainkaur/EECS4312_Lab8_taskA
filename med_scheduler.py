@@ -2,123 +2,127 @@
 ## Student ID:
 
 """
-Task A (Simplified): Medication Reminder Scheduler
-See stub header for rules.
+Task A: Medication Reminder Scheduler (Stub)
+
+Implement a scheduler that generates medication reminders under user-defined constraints.
+
+Inputs include:
+  (i)  a list of medications with frequencies and permissible time windows,
+  (ii) user quiet hours during which notifications must not occur,
+  (iii) a maximum notification rate (no more than k reminders per hour),
+  (iv) an optional snooze operation that shifts a reminder while preserving constraints.
+
+The scheduler outputs the next N reminders in chronological order and must behave
+deterministically under ties.
+
+Edge cases to handle include:
+  - reminders falling within quiet hours (requiring rescheduling),
+  - collisions between reminders,
+  - snoozes that violate constraints,
+  - infeasible scheduling situations.
+
+See the lab handout for full requirements.
 """
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta, time
-from typing import Dict, List, Optional
+from typing import List, Optional, Tuple
 
 
 @dataclass(frozen=True)
 class TimeWindow:
+    """
+    A daily time window.
+    Assumption (unless stated otherwise in handout): non-wrapping window where start < end.
+    """
     start: time
-    end: time  # non-wrapping (start < end)
+    end: time
 
 
 @dataclass(frozen=True)
 class Medication:
+    """
+    Medication definition.
+      - name: unique medication name
+      - every: frequency between reminders (e.g., timedelta(hours=8))
+      - windows: allowed time windows during a day
+    """
     name: str
-    every_minutes: int  # must be > 0
+    every: timedelta
+    windows: Tuple[TimeWindow, ...]
 
 
 @dataclass(frozen=True)
 class Reminder:
+    """
+    A scheduled reminder.
+    Deterministic ordering must be defined (e.g., sort by (when, med_name)).
+    """
     when: datetime
     med_name: str
 
 
-def schedule_reminders(
+class InfeasibleSchedule(Exception):
+    """Raised when constraints make scheduling impossible."""
+    pass
+
+
+class SnoozeViolation(Exception):
+    """Raised when a snooze request cannot be satisfied under constraints."""
+    pass
+
+
+def next_reminders(
     start: datetime,
     meds: List[Medication],
-    allowed_window: TimeWindow,
     quiet_hours: Optional[TimeWindow],
     max_per_hour: int,
     n: int
 ) -> List[Reminder]:
-    # --------- Validation (fail fast) ----------
-    if not isinstance(n, int) or n < 0:
-        raise ValueError("n must be a non-negative int")
-    if not isinstance(max_per_hour, int) or max_per_hour <= 0:
-        raise ValueError("max_per_hour must be a positive int")
-    if allowed_window.end <= allowed_window.start:
-        raise ValueError("allowed_window must be non-wrapping with end > start")
-    if quiet_hours is not None and quiet_hours.end <= quiet_hours.start:
-        raise ValueError("quiet_hours must be non-wrapping with end > start")
+    """
+    Generate the next n reminders >= start.
 
-    if n == 0:
-        return []
+    Args:
+        start: starting datetime (inclusive).
+        meds: list of medications to schedule.
+        quiet_hours: daily quiet hours window where reminders must NOT occur (or None).
+        max_per_hour: maximum reminders allowed per hour (k).
+        n: number of reminders to output.
 
-    seen = set()
-    for m in meds:
-        if not m.name or m.name in seen:
-            raise ValueError("med names must be non-empty and unique")
-        seen.add(m.name)
-        if not isinstance(m.every_minutes, int) or m.every_minutes <= 0:
-            raise ValueError("every_minutes must be a positive int")
+    Returns:
+        A list of n reminders in chronological order with deterministic tie-breaking.
 
-    meds_sorted = sorted(meds, key=lambda x: x.name)  # deterministic tie-breaking
-    deadline = start + timedelta(days=7)
+    Raises:
+        InfeasibleSchedule: if it is impossible to schedule under constraints.
+    """
+    # TODO: Implement scheduling algorithm per lab handout
+    raise NotImplementedError("next_reminders has not been implemented yet")
 
-    def in_window(win: TimeWindow, dt: datetime) -> bool:
-        t = dt.time()
-        return win.start <= t < win.end
 
-    def is_valid(dt: datetime) -> bool:
-        if not in_window(allowed_window, dt):
-            return False
-        if quiet_hours is not None and in_window(quiet_hours, dt):
-            return False
-        return True
+def snooze_reminder(
+    reminders: List[Reminder],
+    target: Reminder,
+    snooze_by: timedelta,
+    meds: List[Medication],
+    quiet_hours: Optional[TimeWindow],
+    max_per_hour: int
+) -> List[Reminder]:
+    """
+    Apply a snooze operation to a previously scheduled reminder, and return an updated schedule.
 
-    def hour_bucket(dt: datetime) -> datetime:
-        return dt.replace(minute=0, second=0, microsecond=0)
+    Args:
+        reminders: current reminder list (chronological, deterministic).
+        target: the reminder to snooze.
+        snooze_by: timedelta to shift the reminder (typically forward).
+        meds: medication definitions (same as scheduling).
+        quiet_hours: quiet window (same as scheduling).
+        max_per_hour: rate limit (same as scheduling).
 
-    def push_to_valid(dt: datetime) -> datetime:
-        # deterministic minute-step search
-        while dt <= deadline and not is_valid(dt):
-            dt += timedelta(minutes=1)
-        if dt > deadline:
-            raise ValueError("infeasible within 7 days")
-        return dt
+    Returns:
+        Updated reminders list that still satisfies all constraints and remains deterministic.
 
-    def enforce_rate(dt: datetime, counts: Dict[datetime, int]) -> datetime:
-        dt = push_to_valid(dt)
-        while True:
-            b = hour_bucket(dt)
-            if counts.get(b, 0) < max_per_hour:
-                return dt
-            # move to next hour boundary, then re-validate constraints
-            dt = b + timedelta(hours=1)
-            dt = push_to_valid(dt)
-
-    # --------- Scheduling ----------
-    next_time: Dict[str, datetime] = {m.name: start for m in meds_sorted}
-    counts: Dict[datetime, int] = {}
-    out: List[Reminder] = []
-
-    while len(out) < n:
-        # Build next feasible candidate per med
-        candidates: List[Reminder] = []
-        for m in meds_sorted:
-            t0 = next_time[m.name]
-            t1 = enforce_rate(t0, counts)
-            candidates.append(Reminder(t1, m.name))
-
-        # Choose earliest time; tie-break by med_name via sorting
-        candidates.sort(key=lambda r: (r.when, r.med_name))
-        chosen = candidates[0]
-
-        # Accept chosen reminder
-        b = hour_bucket(chosen.when)
-        counts[b] = counts.get(b, 0) + 1
-        out.append(chosen)
-
-        # Advance that med by its frequency from accepted time
-        every = next(mm.every_minutes for mm in meds_sorted if mm.name == chosen.med_name)
-        next_time[chosen.med_name] = chosen.when + timedelta(minutes=every)
-
-    # Must be deterministic sorted output
-    out.sort(key=lambda r: (r.when, r.med_name))
-    return out
+    Raises:
+        SnoozeViolation or InfeasibleSchedule: if snooze cannot be satisfied.
+    """
+    # TODO: Implement snooze behavior per lab handout
+    raise NotImplementedError("snooze_reminder has not been implemented yet")
