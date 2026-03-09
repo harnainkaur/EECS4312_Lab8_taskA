@@ -124,5 +124,64 @@ def suggest_slots(
     ##################################################################
     # TODO: Implement as per lab handout requirements and constraints.
     ##################################################################
-    
-    raise NotImplementedError("suggest_slots has not been implemented yet")
+
+    def to_minutes(t: time):
+        return t.hour * 60 + t.minute
+
+    def to_time(m: int):
+        return time(m // 60, m % 60)
+
+    def merge(intervals):
+        if not intervals:
+            return []
+
+        intervals.sort()
+        merged = [intervals[0]]
+
+        for start, end in intervals[1:]:
+            last_start, last_end = merged[-1]
+
+            if start <= last_end:
+                merged[-1] = (last_start, max(last_end, end))
+            else:
+                merged.append((start, end))
+
+        return merged
+
+    work_start = to_minutes(working_hours.start)
+    work_end = to_minutes(working_hours.end)
+
+    if candidate_window:
+        work_start = max(work_start, to_minutes(candidate_window.start))
+        work_end = min(work_end, to_minutes(candidate_window.end))
+
+    busy = [(to_minutes(b.start), to_minutes(b.end)) for b in busy_intervals]
+
+    busy = merge(busy)
+
+    buffer_min = int(buffer.total_seconds() / 60)
+    duration_min = int(duration.total_seconds() / 60)
+
+    slots = []
+    current = work_start
+
+    for start, end in busy:
+
+        start -= buffer_min
+        end += buffer_min
+
+        if start > current:
+            gap = start - current
+
+            if gap >= duration_min:
+                slots.append(Slot(start_time=to_time(current)))
+
+                if len(slots) >= n:
+                    return slots
+
+        current = max(current, end)
+
+    if work_end - current >= duration_min:
+        slots.append(Slot(start_time=to_time(current)))
+
+    return slots[:n]

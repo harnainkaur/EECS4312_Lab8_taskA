@@ -1,6 +1,147 @@
-## Student Name:
-## Student ID: 
+## Student Name: hARNAINDEEP KAUR
+## Student ID: 217621137
 
-Prompt #1: {}
-Response #1: {}
+Prompt #1: 
+Purpose:
+Identify ambiguities before generating code for the appointment slot recommender.
+
+Full Prompt:
+I am implementing an Appointment Slot Recommender system in Python. The system recommends available meeting slots within defined working hours. 
+It must consider existing busy intervals, meeting duration, and buffer time between meetings.
+
+The output must be a list of chronologically ordered appointment slots.
+
+Functional Requirements:
+1. The system must accept working hours.
+2. The system must accept a list of busy intervals.
+3. The system must accept a required meeting duration.
+4. The system must accept an buffer timebetween meetings.
+5. The system must return a list of available appointment slots.
+6. The system must only suggest slots within the working hours.
+7. The system must avoid overlapping with busy intervals.
+8. The system must respect the buffer time when suggesting slots.
+9. The system must return slots that are at least as long as the meeting duration.
+10. The system must return slots in chronological order.
+11. The system must handle overlapping or unsorted busy intervals.
+12. The system must handle very small gaps between meetings.
+13. The system must handle adjacent busy intervals correctly.
+14. The system must handle cases where no slot is available.
+15. The system must handle cases where the meeting duration is longer than any available gap.
+
+
+Constraints:
+C1. Working hours must be within a single day.
+C2. Busy intervals may be overlapping or unsorted.
+C3. Meeting duration must be positive.
+C4. Buffer time must be non-negative.
+C5. Suggested slots must remain within working hours.
+C6. The system must return N slots in chronological order.
+C7. If no valid slots exist, return an empty list.
+
+Acceptance Criteria:
+AC1:
+Given working hours 09:00–17:00 and no busy intervals
+When requesting 3 slots of 30 minutes
+Then the system returns the first 3 chronological slots.
+
+AC2:
+Given overlapping busy intervals
+When calculating availability
+Then overlapping intervals are merged before slot generation.
+
+AC3:
+Given a meeting duration of 60 minutes
+When evaluating gaps
+Then only gaps ≥ 60 minutes are returned.
+
+AC4:
+Given a buffer time of 15 minutes
+When generating slots
+Then slots respect the buffer between meetings.
+
+AC5:
+Given no valid slots exist
+When requesting slots
+Then the system returns an empty list.
+
+AC6:
+Given a meeting duration longer than any gap
+When calculating availability
+Then the system returns an empty list.
+
+Before generating code, identify any ambiguities, missing constraints and edge cases that may require clarification.
+
+Response #1:
+Summary of Response:
+The model suggested clarifying:
+- Whether busy intervals include buffer time or buffer should be applied separately.
+- Whether candidate windows override working hours.
+- Whether time values will be strings or datetime objects.
+
+Decision:
+Accepted clarification that buffer should be applied separately from busy intervals.
+Confirmed that all times will be provided as HH:MM strings and converted internally.
+
+Action Taken:
+Proceed to code generation with clarified assumptions.
 --------------------------------------------------
+Prompt #2
+
+Purpose:
+Request code generation for the Appointment Slot Recommender.
+
+Full Prompt:
+Purpose: Generate the Python implementation of the Appointment Slot Recommender system.
+
+Prompt:
+
+Using the previously clarified requirements, generate a Python implementation of the Appointment Slot Recommender.
+
+Requirements Summary:
+
+Functional Requirements:
+1. The system must accept working hours.
+2. The system must accept a list of busy intervals.
+3. The system must accept a required meeting duration.
+4. The system must accept an buffer timebetween meetings.
+5. The system must return a list of available appointment slots.
+6. The system must only suggest slots within the working hours.
+7. The system must avoid overlapping with busy intervals.
+8. The system must respect the buffer time when suggesting slots.
+9. The system must return slots that are at least as long as the meeting duration.
+10. The system must return slots in chronological order.
+11. The system must handle overlapping or unsorted busy intervals.
+12. The system must handle very small gaps between meetings.
+13. The system must handle adjacent busy intervals correctly.
+14. The system must handle cases where no slot is available.
+15. The system must handle cases where the meeting duration is longer than any available gap.
+
+Constraints:
+C1. Working hours must be within a single day.
+C2. Busy intervals may be overlapping or unsorted.
+C3. Meeting duration must be positive.
+C4. Buffer time must be non-negative.
+C5. Suggested slots must remain within working hours.
+C6. All times must use the same 24-hour format.
+C7. The system must return N slots in chronological order.
+C8. If no valid slots exist, return an empty list.
+
+Implementation Requirements:
+Implement the solution in Python.The implementation must be in a file named solution.py.
+The function should compute available appointment slots based on the constraints.The output should be a list of tuples containing start and end times.
+Generate clean, readable Python code.
+
+Response #2:
+Summary of Response:
+The model generated a Python function that:
+- Converts time strings into datetime objects
+- Sorts and merges overlapping busy intervals
+- Applies buffer times between meetings
+- Calculates available time gaps
+- Returns available slots in chronological order
+
+Decision:
+Accepted the generated implementation with minor formatting adjustments.
+
+Action Taken:
+Added the generated code to solution.py.
