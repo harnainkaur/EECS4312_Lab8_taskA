@@ -179,3 +179,66 @@ def test_a5_buffer_eliminates_small_gaps():
 #################################################################################
 # Add your own additional tests here to cover more cases and edge cases as needed.
 #################################################################################
+    
+def print_slots(slots, duration):
+    return [f"{s.start_time.strftime('%H:%M')} - {(combine(date.today(), s.start_time)+duration).time().strftime('%H:%M')}" for s in slots]
+
+def test_workingHours():
+    working = TimeWindow(time(9,0), time(17,0))
+    busy = []
+    duration = timedelta(minutes=30)
+    slots = suggest_slots(date.today(), working, busy, duration, n=5)
+    
+    print(f"test_workingHours: {working.start.strftime('%H:%M')} - {working.end.strftime('%H:%M')}")
+    print("Suggested slots:", [s.start_time.strftime("%H:%M") for s in slots])
+
+def test_busyIntOverlap():
+    working = TimeWindow(time(9,0), time(17,0))
+    busy = [
+        BusyInterval(time(10,0), time(11,0)),
+        BusyInterval(time(10,30), time(12,0))
+    ]
+    duration = timedelta(minutes=30)
+    slots = suggest_slots(date.today(), working, busy, duration, n=5)
+    assert_slots_basic_constraints(slots, date.today(), working, busy, duration, 5, timedelta(0), None)
+    print("test_busyIntOverlap:", print_slots(slots, duration))
+
+def test_meetingDuration():
+    working = TimeWindow(time(9,0), time(17,0))
+    busy = [
+        BusyInterval(time(9,0), time(9,45)),
+        BusyInterval(time(10,0), time(10,15))
+    ]
+    duration = timedelta(minutes=60)
+    slots = suggest_slots(date.today(), working, busy, duration, n=5)
+    assert_slots_basic_constraints(slots, date.today(), working, busy, duration, 5, timedelta(0), None)
+    print("test_meetingDuration:", print_slots(slots, duration))
+
+def test_bufferTime():
+    working = TimeWindow(time(9,0), time(17,0))
+    busy = [
+        BusyInterval(time(10,0), time(10,30)),
+        BusyInterval(time(12,0), time(12,15))
+    ]
+    duration = timedelta(minutes=30)
+    buffer = timedelta(minutes=15)
+    slots = suggest_slots(date.today(), working, busy, duration, n=5, buffer=buffer)
+    assert_slots_basic_constraints(slots, date.today(), working, busy, duration, 5, buffer, None)
+    print("test_bufferTime:", print_slots(slots, duration))
+
+def test_noSlotExist():
+    working = TimeWindow(time(9,0), time(10,0))
+    busy = [
+        BusyInterval(time(9,0), time(10,0))
+    ]
+    duration = timedelta(minutes=30)
+    slots = suggest_slots(date.today(), working, busy, duration, n=5)
+    assert slots == []
+    print("test_noSlotExist:", print_slots(slots, duration))
+
+if __name__ == "__main__":
+    test_workingHours()
+    test_busyIntOverlap()
+    test_meetingDuration()
+    test_bufferTime()
+    test_noSlotExist()
